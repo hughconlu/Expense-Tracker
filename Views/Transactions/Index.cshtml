@@ -1,0 +1,244 @@
+﻿@model IEnumerable<ExpenseTracker.Models.Transaction>
+@using Newtonsoft.Json
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="~/css/Index.css">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    </head>
+    <body>
+        <div class="whole">
+            <h1>Dashboard</h1>
+            <div class="box-btn-table-chart-container">
+                <div class="box-btn-table-container">
+                    <div class="box-container">
+                        <!--Total Income-->
+                        <div class="box"> 
+                            <p>Total Income:</p>
+                            <p class="green">₱ @ViewBag.TotalIncome.ToString("N2")</p>
+                        </div>
+                        <!--Total Expense-->
+                        <div class="box">
+                            <p>Total Expenses:</p>
+                            <p class="red">₱ @ViewBag.TotalExpenses.ToString("N2")</p>
+                        </div>
+                        <!--Balance-->
+                        <div class="box">
+                            <p>Balance:</p>
+                            <p>₱ @ViewBag.Balance.ToString("N2")</p>
+                        </div>
+                    </div>
+
+                    <!--Create Income and Expense Buttons-->
+                    <div class="btn-container">
+                    <a href="/Transactions/CreateIncome" class="btn">Add Income</a>
+                    <a href="/Transactions/CreateExpense" class="btn">Add Expense</a>
+                    </div>
+
+                    <!-- Recent Transactions Table-->
+                    <div class="recent-transactions">
+                        <h2>Recent Transactions</h2>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Category</th>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var transaction in Model)
+                                {
+                                    <tr>
+                                        <td>@transaction.Description</td>
+                                        <td>₱ @transaction.Amount.ToString("N2")</td>
+                                        <td>@transaction.Category</td>
+                                        <td>@transaction.Date.ToShortDateString()</td>
+                                        <td>@(transaction.IsIncome ? "Income" : "Expense")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="graph-container">
+                    <div class="bar-chart-container">
+                    <p>Income and Expense Bar Chart</p>
+                        <canvas id="incomeExpenseChart"></canvas>
+                    </div>
+
+                    <div class="pie-chart-container">
+                    <p>Expense Pie Chart</p>
+                        <canvas id="expensesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+   
+            
+        </div>
+
+        <script>
+        //Pie Chart
+        document.addEventListener("DOMContentLoaded", function () {
+ 
+            var ctx = document.getElementById('expensesChart').getContext('2d');
+            var chartData = @Html.Raw(ViewBag.ExpenseData);
+
+            if (chartData.length === 0) {
+                chartData = [{ Category: 'No Data', Total: 0 }];
+            }
+
+            var labels = chartData.map(function (item) { return item.Category; });
+            var data = chartData.map(function (item) { return item.Total; });
+
+            var chart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Expense Categories',
+                        data: data,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.2)',
+                            'rgba(54, 162, 235, 0.2)',
+                            'rgba(255, 206, 86, 0.2)',
+                            'rgba(75, 192, 192, 0.2)',
+                            'rgba(153, 102, 255, 0.2)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    family: 'Nunito',
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (tooltipItem) {
+                                    return tooltipItem.label + ': ₱' + tooltipItem.raw.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+                                }
+                            },
+                            bodyFont: {
+                                family: 'Nunito',
+                                size: 14,
+                                weight: 'normal'
+                            }
+                        }
+                    }
+                }
+            });
+
+            //Bar Graph
+            var barCtx = document.getElementById('incomeExpenseChart').getContext('2d');
+            var monthlyData = @Html.Raw(ViewBag.IncomeVsExpenseData);
+
+
+            var labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+            var incomeData = monthlyData.map(d => d.Income);
+            var expenseData = monthlyData.map(d => d.Expense);
+            var currentYear = new Date().getFullYear();
+
+            var barChart = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Income',
+                        data: incomeData,
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Expenses',
+                        data: expenseData,
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            ticks: {
+                                font: {
+                                    family: 'Nunito',
+                                    size: 14,
+                                    weight: 'normal',
+                                    color: '#ffffff'
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                font: {
+                                    family: 'Nunito',
+                                    size: 14,
+                                    weight: 'normal',
+                                    color: '#ffffff'
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function (tooltipItem) {
+                                    return '₱' + tooltipItem.raw.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+                                }
+                            },
+                            bodyFont: {
+                                family: 'Nunito',
+                                size: 14,
+                                weight: 'normal',
+                                color: '#ffffff'
+                            }
+                        },
+                        legend: {
+                            labels: {
+                                font: {
+                                    family: 'Nunito',
+                                    size: 14,
+                                    weight: 'bold',
+                                    color: '#ffffff'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+        </script>
+    
+    </body>
+</html>

@@ -1,0 +1,49 @@
+﻿@model IEnumerable<ExpenseTracker.Models.Transaction>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial scale=1.0">
+    <link rel="stylesheet" href="~/css/History.css" />
+</head>
+<body>
+    <div class="whole">
+            <h1>Income History</h1>
+            <!--Add Income Button-->
+            <a href="/Transactions/CreateIncome" class="btn">Add Income</a>
+  
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var transaction in Model)
+                {
+                    <!--Details-->
+                    <tr>
+                       <td>@transaction.Description</td>
+                       <td>₱ @transaction.Amount.ToString("N2")</td>
+                       <td>@transaction.Category</td>
+                       <td>@transaction.Date.ToShortDateString()</td>
+
+                       <!--Buttons-->
+                       <td>
+                         <a href="/Transactions/Details/@transaction.Id" class="btn">View</a>
+                         <a href="/Transactions/Edit/@transaction.Id" class="btn btn-warning">Edit</a>
+                         <a href="/Transactions/Delete/@transaction.Id" class="btn btn-danger">Delete</a>
+                       </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
